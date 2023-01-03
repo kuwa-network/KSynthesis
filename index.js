@@ -14,6 +14,9 @@ process.on("uncaughtException", function(err) {
     logger.error(err);
 })
 
+let RAMCache = {};
+let STORAGECache = {};
+
 console.info("______ __________                 _____ ______                _____");
 console.info("___  //_/__  ___/_____  _________ __  /____  /_ _____ ___________(_)________");
 console.info("__  ,<   _____ \\ __  / / /__  __ \\_  __/__  __ \\_  _ \\__  ___/__  / __  ___/");
@@ -29,6 +32,15 @@ console.info("                 /____/");
             config = yaml.load(fs.readFileSync("./config.yml", "utf8"));
             logger.debug("Load config FILE");
         }
+    }
+})();
+
+
+(async () => { // RAMCache ttl Task
+    if (config.RAMCache.switch) {
+        logger.info(`RAMCache DO Reset => ${Object.keys(RAMCache).length} items`)
+        RAMCache = {};
+        await sleep(config.RAMCache.ALLttl);
     }
 })();
 
@@ -78,11 +90,29 @@ const server = http.createServer(async (req, res) => {
     if (!type) type = 8;
     if (!speed) speed = 1.1;
     if (!pitch) pitch = 0;
+    logger.debug(`Request to KSynthesis | method:GET | ${req.url}`);
+
+    if (config.RAMCache.switch) {
+        if (Object.keys(RAMCache).length > config.RAMCache.maxLength) {
+            logger.info(`RAMCache DO Reset => ${Object.keys(RAMCache).length} items`)
+            RAMCache = {};
+        }
+        if (text in RAMCache) {
+            if (RAMCache[text].type == type && RAMCache[text].speed == speed && RAMCache[text].pitch == pitch) {
+                logger.debug(`Response to Client from Cache | ${text} |`);
+                res.writeHead(200);
+                res.write(RAMCache[text].synthesisData);
+                res.end();
+                return;
+            } 
+        }
+    }
+
     let audioQueryData;
     for (let num = 0; num < config.audioQuery.retryCount; num++) { //voice task // 再試行あり
         audioQueryData = await audioQuery(text, type, speed, pitch, config.audioQuery.timeOut);
         if (!audioQueryData || audioQueryData == "timeout" || audioQueryData == 500) {
-            await sleep(config.ttsQ.audioQuery.retryInterval);
+            await sleep(config.audioQuery.retryInterval);
             continue;
         }
         break;
@@ -97,7 +127,7 @@ const server = http.createServer(async (req, res) => {
     for (let num = 0; num < config.synthesis.retryCount; num++) { //voice task // 再試行あり
         synthesisData = await synthesis(audioQueryData, type, config.synthesis.timeOut);
         if (!synthesisData || synthesisData == "timeout" || synthesisData == 500) {
-            await sleep(config.ttsQ.synthesis.retryInterval);
+            await sleep(config.synthesis.retryInterval);
             continue;
         }
         break;
@@ -107,6 +137,17 @@ const server = http.createServer(async (req, res) => {
         res.end("{\"status\":\"error\"");
         return;
     }
+    if (config.RAMCache.switch) {
+        if (!(text in RAMCache)) {
+            RAMCache[text] = {
+                synthesisData: synthesisData,
+                type: type,
+                speed: speed,
+                pitch: pitch
+            }
+        }
+    }
+    logger.debug(`Response to Client | ${text} |`);
     res.writeHead(200);
     res.write(synthesisData);
     res.end();

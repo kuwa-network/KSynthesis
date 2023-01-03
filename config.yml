@@ -2,6 +2,20 @@ loggerLevel: "debug"
 configRealtimeLoad: true # 起動中に設定ファイルの反映をするかどうか
 configLoadInterval: 1000000
 
+listen:
+  host: "0.0.0.0"
+  port: 59998
+
+RAMCache:
+  switch: true
+  maxLength: 2000
+  ALLttl: 60000
+
+STORAGECache:
+  switch: false
+  maxLength: 5000
+  ALLttl: 60000
+
 audioQuery:
   location: "https://api.kuwa.app/voicevox/audio_query?text={text}&speaker={type}"
   retryCount: 10
@@ -13,7 +27,3 @@ synthesis:
   retryCount: 10
   retryInterval: 100 # 単位ms
   timeOut: 20000
-
-listen:
-  host: "0.0.0.0"
-  port: 59998
