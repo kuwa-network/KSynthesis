@@ -1,0 +1,2 @@
+# KSynthesis
+VoiceVox系列のリクエストをGET一つで行えるようにするもの
