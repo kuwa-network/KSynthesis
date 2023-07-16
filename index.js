@@ -84,7 +84,7 @@ const server = http.createServer(async (req, res) => {
     let text = url.parse(req.url, true).query.text, type = url.parse(req.url, true).query.type, speed = url.parse(req.url, true).query.speed, pitch = url.parse(req.url, true).query.pitch;
     if (!text) {
         res.writeHead(500);
-        res.end("{\"status\":\"error\"");
+        res.end("{\"status\":\"error\"}");
         return;
     }
     if (!type) type = 8;
@@ -119,7 +119,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (!audioQueryData || audioQueryData == "timeout" || audioQueryData == 500) {
         res.writeHead(500);
-        res.end("{\"status\":\"error\"");
+        res.end("{\"status\":\"error\"}");
         return;
     }
 
@@ -134,7 +134,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (!synthesisData || synthesisData == "timeout" || synthesisData == 500) {
         res.writeHead(500);
-        res.end("{\"status\":\"error\"");
+        res.end("{\"status\":\"error\"}");
         return;
     }
     if (config.RAMCache.switch) {
